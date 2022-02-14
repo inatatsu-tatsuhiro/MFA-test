@@ -7,7 +7,7 @@ import {
   RecaptchaVerifier,
   signOut,
   sendEmailVerification,
-  GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
 
@@ -57,11 +57,10 @@ function App() {
   }
 
   const twoFactorMethod = () => {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider)
-  .then((result) => {
+    const provider = new OAuthProvider('microsoft.com');
+    signInWithPopup(auth, provider).then((result) => {
     // This gives you a Google Access Token. You can use it to access the Google API.
-    const credential = GoogleAuthProvider.credentialFromResult(result);
+    const credential = OAuthProvider.credentialFromResult(result);
     const token = credential.accessToken;
     // The signed-in user info.
     const user = result.user;
@@ -96,7 +95,7 @@ function App() {
         onChange={(e) => setEmail(e.target.value)}
       />
       <button onClick={signUpMethod}>SIGNUP</button>
-      <h2>Google連携</h2>
+      <h2>Microsoft連携</h2>
       <button onClick={twoFactorMethod}>SETUP</button>
 
       <h2>ログアウト</h2>

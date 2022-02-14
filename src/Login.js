@@ -2,14 +2,14 @@ import "./App.css";
 import React, { useState } from "react";
 import { initializeApp } from "firebase/app";
 import {
-  createUserWithEmailAndPassword,
   getAuth,
   RecaptchaVerifier,
   signOut,
-  sendEmailVerification,
+  signInWithEmailAndPassword,
   PhoneAuthProvider,
-  multiFactor,
-  PhoneMultiFactorGenerator
+  getMultiFactorResolver,
+  PhoneMultiFactorGenerator,
+  signInWithPhoneNumber
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -27,14 +27,16 @@ const auth = getAuth();
 
 function App() {
 
-  const [mobile, setMobile] = useState("");
+  const [mobile, setMobile] = useState("9062051676");
   const [otp, setOtp] = useState("");
-  const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("Test0000");
+  const [email, setEmail] = useState("tatsuhiro.9699+99@gmail.com");
   const [vid, setVid] = useState('')
   const [mfu, setMfu] = useState('')
   const [user, setUser] = useState('')
   const [recaptchaVerifier, setRecaptchaVerifier] = useState(null)
+
+  const [resolver, setResolver] = useState(null)
 
   const configureCaptcha = () => {
     const rec = new RecaptchaVerifier(
@@ -52,57 +54,45 @@ function App() {
     setRecaptchaVerifier(rec)
   };
 
-  const signUpMethod = () => {
-    console.log('sign-up')
+  const signInMethod = () => {
     configureCaptcha()
-    createUserWithEmailAndPassword(auth, email, password).then((userCredentials) => {
-      sendEmailVerification(userCredentials.user).then(() => {
-        console.log('success',auth.currentUser)
-        setUser(auth.currentUser)
+    console.log('sign-in')
+    console.log('auth', auth)
+    signInWithEmailAndPassword(auth, email, password).then((cred) => {
+      setUser(cred.user)
+    }).catch((e) => {
+      const resolver = getMultiFactorResolver(auth, e)
+      const appVerifier = recaptchaVerifier;
+      setResolver(resolver)
+
+      const phoneOptions = {
+        multiFactorHint: resolver.hints[0],
+        session: resolver.session,
+      };
+      const pap = new PhoneAuthProvider(auth)
+      console.log(pap.verifyPhoneNumber)
+      pap.verifyPhoneNumber(
+        phoneOptions,
+        appVerifier
+      ).then((verificationId) => {
+        setVid(verificationId)
+        // store verificationID and show UI to let user enter verification code.
+      }).catch(e => {
+        console.log('e', e)
       })
     })
   }
 
-  const twoFactorMethod = () => {
-    console.log('2 factor auth')
-    configureCaptcha()
-    const appVerifier = recaptchaVerifier;
-    console.log('auth', auth)
-    const mfu = multiFactor(user)
-    mfu.getSession().then((mfs) => {
-      const phoneNumber = "+81" + mobile;
-      console.log('mfs', mfs)
-      const option = {
-        phoneNumber: phoneNumber,
-        session: mfs
-      }
-      const pap = new PhoneAuthProvider(auth)
-      console.log('pap', pap)
-      pap.verifyPhoneNumber(option, appVerifier).then((verificationId) => {
-        console.log('verId', verificationId)
-        setVid(verificationId)
-        setMfu(mfu)
-      }).catch((e) => {
-        console.log('errr', e)
-      })
-    }).catch((e) => {
-      console.log('err', e)
-    })
-  }
 
   const onSubmitOTP = () => {
     const code = otp;
     console.log(code);
     const credential = PhoneAuthProvider.credential(vid, code)
-    console.log('credential', credential)
-    console.log('user', user)
     const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(credential);
-    mfu.enroll(multiFactorAssertion).then(() => {
-      console.log('enroll')
-    }).catch(() => {
-      console.log('error')
-    })
-
+    resolver.resolveSignIn(multiFactorAssertion).then(function(userCredential) {
+      // User signed in.
+      console.log('user', userCredential)
+    });
   };
     
   const logOut = () => {
@@ -134,16 +124,7 @@ function App() {
         required
         onChange={(e) => setPassword(e.target.value)}
       />
-      <button onClick={signUpMethod}>SIGNUP</button>
-      <h2>アカウント2段階設定</h2>
-        <input
-          type="number"
-          name="mobile"
-          placeholder="Mobile number"
-          required
-          onChange={(e) => setMobile(e.target.value)}
-        />
-      <button onClick={twoFactorMethod}>SETUP</button>
+      <button onClick={signInMethod}>SIGNUP</button>
       <h2>アカウント2段階確認</h2>
       <input
         type="number"
