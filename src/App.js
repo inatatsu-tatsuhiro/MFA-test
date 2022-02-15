@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { initializeApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
@@ -9,7 +9,7 @@ import {
   sendEmailVerification,
   PhoneAuthProvider,
   multiFactor,
-  PhoneMultiFactorGenerator
+  PhoneMultiFactorGenerator,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -27,14 +27,18 @@ const auth = getAuth();
 
 function App() {
 
-  const [mobile, setMobile] = useState("");
+  const [mobile, setMobile] = useState("9062051676");
   const [otp, setOtp] = useState("");
-  const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("Test0000");
+  const [email, setEmail] = useState("tatsuhiro.9699+005@gmail.com");
   const [vid, setVid] = useState('')
   const [mfu, setMfu] = useState('')
   const [user, setUser] = useState('')
   const [recaptchaVerifier, setRecaptchaVerifier] = useState(null)
+
+  useEffect(() => {
+
+  }, [])
 
   const configureCaptcha = () => {
     const rec = new RecaptchaVerifier(
@@ -69,6 +73,7 @@ function App() {
     const appVerifier = recaptchaVerifier;
     console.log('auth', auth)
     const mfu = multiFactor(user)
+    console.log('mfu', mfu)
     mfu.getSession().then((mfs) => {
       const phoneNumber = "+81" + mobile;
       console.log('mfs', mfs)
